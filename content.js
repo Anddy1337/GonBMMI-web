@@ -1,4 +1,4 @@
-// YT Smart Skip (rebuilt): visualize SponsorBlock segments and skip them
+// YT Smart Skip: visualize SponsorBlock segments and auto-skip (cleaned)
 
 const { SB_API, DEFAULT_CATEGORIES, STORAGE_KEYS, CATEGORY_COLORS } = window.YTSmartSkip || {};
 
@@ -9,13 +9,12 @@ let autoSkipEnabled = false;
 let lastVideoEl = null;
 let timeUpdateHandler = null;
 const segmentCache = new Map();
-let sponsorColorHex = '#FFD700';
 let categoryColorMap = { ...CATEGORY_COLORS };
+let visibleCategories = [...DEFAULT_CATEGORIES];
 
 const TIMELINE_SELECTOR = '.ytp-progress-bar';
 const TIMELINE_OVERLAY_SELECTOR = '.sb-timeline';
 const FLOATING_SKIP_SELECTOR = '.sb-floating-skip';
-// Track the settings menu item instead of the control-bar pill (settings-only per request)
 const AUTOSKIP_TOGGLE_SELECTOR = '.sb-autoskip-menuitem';
 
 function getVideoElement() { return document.querySelector('video'); }
@@ -49,7 +48,6 @@ function storageGet(defaults) {
     try {
       chrome.storage.sync.get(defaults, (data) => resolve(data));
     } catch (_) {
-      // Fallback for environments without chrome.* (should not happen in content script, but safe)
       const result = { ...defaults };
       Object.keys(defaults).forEach((k) => {
         const raw = localStorage.getItem(k);
@@ -104,9 +102,9 @@ function mountTimelineMarkers() {
     d.className = `sb-segment cat-${seg.category || 'sponsor'}`;
     d.style.left = `${startPct}%`;
     d.style.width = `${widthPct}%`;
-    // Apply per-category color (fallback to sponsorColorHex for sponsor, or defaults)
+    // Apply per-category color from map
     const cat = seg.category || 'sponsor';
-    const hex = (cat === 'sponsor' && sponsorColorHex) ? sponsorColorHex : (categoryColorMap[cat] || CATEGORY_COLORS[cat] || sponsorColorHex);
+    const hex = categoryColorMap[cat] || CATEGORY_COLORS[cat] || '#FFD700';
     const { r, g, b } = hexToRgb(hex);
     d.style.background = `rgba(${r}, ${g}, ${b}, 0.65)`;
     overlay.appendChild(d);
@@ -131,16 +129,12 @@ function hideFloatingSkip() {
   if (existing) existing.remove();
 }
 
-// Removed legacy control-bar auto-skip pill; auto-skip is managed via the settings gear menu.
-
 function mountAutoSkipInSettings() {
-  // Attach once; settings menu is created dynamically when the gear is clicked
   const gear = document.querySelector('.ytp-settings-button');
   if (!gear) return;
   if (gear.__sbHooked) return; // prevent multiple listeners
   gear.__sbHooked = true;
   gear.addEventListener('click', () => {
-    // Wait briefly for the menu panel to appear
     setTimeout(() => {
       const menuRoot = document.querySelector('.ytp-settings-menu')
         || document.querySelector('.ytp-panel-menu')
@@ -149,8 +143,6 @@ function mountAutoSkipInSettings() {
       const container = menuRoot.querySelector('.ytp-panel-menu') || menuRoot;
       let item = container.querySelector('.sb-autoskip-menuitem');
       if (!item) {
-        // Create a native-looking settings menu item (label + content text),
-        // matching YouTube's settings structure. Clicking the item toggles the value.
         item = document.createElement('div'); item.className = 'ytp-menuitem sb-autoskip-menuitem'; item.setAttribute('role','menuitem');
         const label = document.createElement('div'); label.className = 'ytp-menuitem-label'; label.textContent = 'Auto skip';
         const content = document.createElement('div'); content.className = 'ytp-menuitem-content'; content.textContent = autoSkipEnabled ? 'On' : 'Off';
@@ -196,7 +188,6 @@ function jumpToPrevSegment() {
 }
 
 function mountKeyboardShortcuts() {
-  // Use Alt+S to skip, Alt+N next, Alt+P previous to avoid conflicts with YouTube shortcuts.
   window.addEventListener('keydown', (e) => {
     if (!e.altKey) return;
     if (e.code === 'KeyS') { e.preventDefault(); skipCurrentSegment(); }
@@ -205,20 +196,37 @@ function mountKeyboardShortcuts() {
   }, { passive: false });
 }
 
+function applyCategoryStateFromStored(categoriesObj) {
+  // categoriesObj: { [cat]: { visible: bool, color: string } }
+  const colors = { ...CATEGORY_COLORS };
+  const visible = [];
+  if (categoriesObj && typeof categoriesObj === 'object') {
+    for (const cat of DEFAULT_CATEGORIES) {
+      const cfg = categoriesObj[cat];
+      if (cfg) {
+        if (typeof cfg.color === 'string') colors[cat] = cfg.color;
+        if (cfg.visible) visible.push(cat);
+      } else {
+        // default: visible
+        visible.push(cat);
+      }
+    }
+  } else {
+    visible.push(...DEFAULT_CATEGORIES);
+  }
+  categoryColorMap = colors;
+  visibleCategories = visible.length ? visible : [...DEFAULT_CATEGORIES];
+}
+
 async function setupForVideo() {
   const videoId = getVideoId(); if (!videoId) return;
   if (currentVideoId === videoId && sponsorSegments.length) { mountTimelineMarkers(); mountAutoSkipInSettings(); return; }
   currentVideoId = videoId;
-  const data = await storageGet({ [STORAGE_KEYS.categories]: DEFAULT_CATEGORIES, [STORAGE_KEYS.autoSkipEnabled]: false, [STORAGE_KEYS.sponsorColor]: '#FFD700', [STORAGE_KEYS.categoryColors]: CATEGORY_COLORS });
-  const categories = data[STORAGE_KEYS.categories] || DEFAULT_CATEGORIES;
+  const data = await storageGet({ [STORAGE_KEYS.categories]: null, [STORAGE_KEYS.autoSkipEnabled]: false });
+  applyCategoryStateFromStored(data[STORAGE_KEYS.categories]);
   autoSkipEnabled = Boolean(data[STORAGE_KEYS.autoSkipEnabled]);
-  sponsorColorHex = typeof data[STORAGE_KEYS.sponsorColor] === 'string' ? data[STORAGE_KEYS.sponsorColor] : '#FFD700';
-  categoryColorMap = { ...CATEGORY_COLORS, ...(data[STORAGE_KEYS.categoryColors] || {}) };
-  // Keep sponsor mapping aligned with legacy sponsorColorHex
-  if (sponsorColorHex) categoryColorMap.sponsor = sponsorColorHex;
-  sponsorSegments = await fetchSponsorSegments(videoId, categories);
+  sponsorSegments = await fetchSponsorSegments(videoId, visibleCategories);
   mountTimelineMarkers();
-  // Only mount inside the settings gear menu
   mountAutoSkipInSettings();
   mountKeyboardShortcuts();
 
@@ -249,42 +257,45 @@ function observeNavigation() {
   const player = getPlayerElement() || document.documentElement;
   const mo = new MutationObserver(() => {
     if (!document.querySelector(TIMELINE_OVERLAY_SELECTOR)) mountTimelineMarkers();
-    // Ensure the settings gear hook exists
     mountAutoSkipInSettings();
   });
   mo.observe(player, { childList: true, subtree: true });
 }
 
-// React to changes from the popup immediately (persist and reflect without page reload)
+// React to changes from the popup immediately
 try {
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'sync') return;
     if (changes[STORAGE_KEYS.autoSkipEnabled]) {
       autoSkipEnabled = Boolean(changes[STORAGE_KEYS.autoSkipEnabled].newValue);
-      // Update settings menu item content if visible
       const item = document.querySelector('.sb-autoskip-menuitem .ytp-menuitem-content');
       if (item) item.textContent = autoSkipEnabled ? 'On' : 'Off';
     }
-    if (changes[STORAGE_KEYS.sponsorColor]) {
-      const val = changes[STORAGE_KEYS.sponsorColor].newValue;
-      sponsorColorHex = typeof val === 'string' ? val : sponsorColorHex;
-      categoryColorMap.sponsor = sponsorColorHex;
-      // Re-render the timeline markers to apply new color
-      mountTimelineMarkers();
-    }
-    if (changes[STORAGE_KEYS.categoryColors]) {
-      const newMap = changes[STORAGE_KEYS.categoryColors].newValue || {};
-      categoryColorMap = { ...CATEGORY_COLORS, ...newMap };
-      if (categoryColorMap.sponsor) sponsorColorHex = categoryColorMap.sponsor;
-      mountTimelineMarkers();
-    }
     if (changes[STORAGE_KEYS.categories]) {
-      // Re-fetch segments for the new set of visible categories
-      const cats = changes[STORAGE_KEYS.categories].newValue || DEFAULT_CATEGORIES;
+      const catsObj = changes[STORAGE_KEYS.categories].newValue;
+      applyCategoryStateFromStored(catsObj);
       (async () => {
-        sponsorSegments = await fetchSponsorSegments(currentVideoId, cats);
+        sponsorSegments = await fetchSponsorSegments(currentVideoId, visibleCategories);
         mountTimelineMarkers();
       })();
+    }
+  });
+} catch (_) {}
+
+// Also respond to direct messages from popup
+try {
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg?.type === 'categories_updated') {
+      (async () => {
+        const data = await storageGet({ [STORAGE_KEYS.categories]: null });
+        applyCategoryStateFromStored(data[STORAGE_KEYS.categories]);
+        sponsorSegments = await fetchSponsorSegments(currentVideoId, visibleCategories);
+        mountTimelineMarkers();
+      })();
+    } else if (msg?.type === 'auto_skip_toggled' && typeof msg.enabled === 'boolean') {
+      autoSkipEnabled = msg.enabled;
+      const item = document.querySelector('.sb-autoskip-menuitem .ytp-menuitem-content');
+      if (item) item.textContent = autoSkipEnabled ? 'On' : 'Off';
     }
   });
 } catch (_) {}
