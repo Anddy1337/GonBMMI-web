@@ -20,14 +20,13 @@ Manifest V3, works on desktop YouTube and m.youtube.com loaded in desktop browse
 
 ```
 GonBMMI-web/
-├── manifest.json          # MV3 manifest, permissions, content scripts, icons
+├── manifest.json          # MV3 manifest, permissions, content scripts
 ├── shared.js              # Shared constants: categories, storage keys, labels, defaults
 ├── content.js             # Content script for fetching, rendering, and auto‑skip
 ├── content.css            # Timeline overlay, floating button, menu sizing tweaks
 ├── popup.html             # Popup UI (auto‑skip, category visibility, colors)
 ├── popup.css              # Popup styles
-├── popup.js               # Popup logic, debounced storage writes
-├── icons/                 # Extension icons
+├── popup.js               # Popup logic, storage sync + messaging
 └── README.md              # This document
 ```
 
@@ -35,7 +34,8 @@ GonBMMI-web/
 
 1) Video detection and preferences
 - Detect video ID via `ytInitialPlayerResponse` or URL (`v` or `/shorts/<id>`)
-- Load `chrome.storage.sync` keys: `categories`, `autoSkipEnabled`, `categoryColors`, `sponsorColor` (legacy)
+- Load `chrome.storage.sync` keys: `categories` (object map) and `autoSkipEnabled`
+  - `categories` shape: `{ [category]: { visible: boolean, color: string } }`
 
 2) Fetch segments
 - GET `https://sponsor.ajay.app/api/skipSegments?videoID=<id>&categories=[...]`
@@ -43,7 +43,7 @@ GonBMMI-web/
 
 3) Render timeline
 - Build `.sb-timeline` overlay inside `.ytp-progress-bar`
-- Draw each segment as `.sb-segment` positioned by percentage with color from `categoryColors`
+- Draw each segment as `.sb-segment` positioned by percentage with color from the `categories[cat].color` (fallbacks in `CATEGORY_COLORS`)
 
 4) Skip controls
 - Floating button appears in‑segment when auto‑skip is off; clicking jumps to segment end
@@ -52,7 +52,7 @@ GonBMMI-web/
 5) SPA navigation and live UI
 - Listen for `yt-navigate-finish` to clean up and reinitialize for new videos
 - MutationObserver ensures overlay mounts if player DOM changes
-- `chrome.storage.onChanged` applies popup changes immediately (categories, colors, auto‑skip)
+- `chrome.storage.onChanged` + message handling applies popup changes immediately (`categories` visibility/colors, `autoSkipEnabled`)
 
 ## Permissions
 
@@ -68,7 +68,7 @@ GonBMMI-web/
 
 ## Development notes
 
-- Popup saves are debounced to avoid Chrome’s `MAX_WRITE_OPERATIONS_PER_MINUTE` quota; `change` events save immediately
+- Popup changes write to storage immediately; content script listens and updates without reload
 - Colors are parsed robustly; invalid hex falls back to gold
 - The legacy control‑bar pill has been removed to avoid UI clutter; auto‑skip lives in the settings gear menu
 
