@@ -27,11 +27,10 @@
     music_offtopic: '#00ced1'
   };
 
+  // Only the keys we actually use
   const STORAGE_KEYS = {
-    categories: 'categories',
-    autoSkipEnabled: 'autoSkipEnabled',
-    sponsorColor: 'sponsorColor',
-    categoryColors: 'categoryColors'
+    categories: 'categories', // { [category]: { visible: boolean, color: string } }
+    autoSkipEnabled: 'autoSkipEnabled'
   };
 
   const SB_API = 'https://sponsor.ajay.app/api/skipSegments';
