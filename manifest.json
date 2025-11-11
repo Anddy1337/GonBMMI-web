@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YT Smart Skip: Sponsor & Highlights",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Skip sponsor segments via SponsorBlock, visualize them on the timeline, and control auto-skip.",
   "permissions": ["storage"],
   "host_permissions": [
@@ -9,6 +9,13 @@
     "https://m.youtube.com/*",
     "https://sponsor.ajay.app/*"
   ],
+  "icons": {
+    "16": "icons/picture16x.png",
+    "24": "icons/picture24x.png",
+    "32": "icons/picture32x.png",
+    "64": "icons/picture64x.png",
+    "128": "icons/picture128x.png"
+  },
   "content_scripts": [
     {
       "matches": [
@@ -21,6 +28,14 @@
     }
   ],
   "action": {
-    "default_popup": "popup.html"
+    "default_title": "YT Smart Skip",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/picture16x.png",
+      "24": "icons/picture24x.png",
+      "32": "icons/picture32x.png",
+      "64": "icons/picture64x.png",
+      "128": "icons/picture128x.png"
+    }
   }
 }
