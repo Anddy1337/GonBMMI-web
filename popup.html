@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YT Smart Skip Settings</title>
+  <link rel="stylesheet" href="popup.css" />
+  
+</head>
+<body>
+  <div id="app" class="container">
+    <header class="header">
+      <img src="icons/picture24x.png" alt="icon" class="icon" />
+      <div class="title">YT Smart Skip</div>
+    </header>
+
+    <section class="section">
+      <label class="row">
+        <span class="label">Auto skip</span>
+        <input type="checkbox" id="autoSkipEnabled" />
+      </label>
+    </section>
+
+    <section class="section">
+      <div class="label" style="margin-bottom:6px">Visible categories</div>
+      <div class="chips" id="visibility-chips">
+        <label class="chip"><input type="checkbox" id="vis-sponsor" checked /><span>Sponsor</span></label>
+        <label class="chip"><input type="checkbox" id="vis-selfpromo" checked /><span>Self-promotion</span></label>
+        <label class="chip"><input type="checkbox" id="vis-interaction" checked /><span>Interaction</span></label>
+        <label class="chip"><input type="checkbox" id="vis-intro" checked /><span>Intro</span></label>
+        <label class="chip"><input type="checkbox" id="vis-outro" checked /><span>Outro</span></label>
+        <label class="chip"><input type="checkbox" id="vis-music_offtopic" checked /><span>Non-music</span></label>
+      </div>
+      <div class="tip" style="margin-top:6px">Toggle which categories appear on the timeline.</div>
+    </section>
+
+    <section class="section">
+      <div class="label" style="margin-bottom:6px">Timeline colors</div>
+      <div class="grid">
+        <label class="grid-row"><span>Sponsor</span><input type="color" id="color-sponsor" value="#FFD700" /></label>
+        <label class="grid-row"><span>Self-promotion</span><input type="color" id="color-selfpromo" value="#FFA500" /></label>
+        <label class="grid-row"><span>Interaction</span><input type="color" id="color-interaction" value="#FF69B4" /></label>
+        <label class="grid-row"><span>Intro</span><input type="color" id="color-intro" value="#1E90FF" /></label>
+        <label class="grid-row"><span>Outro</span><input type="color" id="color-outro" value="#8A2BE2" /></label>
+        <label class="grid-row"><span>Non-music (music videos)</span><input type="color" id="color-music_offtopic" value="#00CED1" /></label>
+      </div>
+      <div class="tip" style="margin-top:6px">Changes apply immediately to the timeline.</div>
+    </section>
+
+    <footer class="footer">
+      <span class="status" id="status">Saved</span>
+    </footer>
+  </div>
+
+  <script src="shared.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
