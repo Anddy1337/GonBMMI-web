@@ -1,0 +1,79 @@
+/* Toast message */
+.sb-skip-toast {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  background: rgba(0,0,0,0.85);
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  transition: opacity 200ms ease;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 99999;
+}
+
+/* Timeline overlay for SponsorBlock segments */
+.sb-timeline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 9999; /* ensure overlay sits above progress bar visuals */
+}
+
+.sb-segment {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* Remove white outline to let the custom color fill the bar fully */
+  border: none;
+  opacity: 0.8;
+}
+
+/* Per-category colors */
+.sb-segment.cat-sponsor { background: rgba(255, 215, 0, 0.65); }
+.sb-segment.cat-selfpromo { background: rgba(255, 165, 0, 0.65); }
+.sb-segment.cat-interaction { background: rgba(255, 105, 180, 0.65); }
+.sb-segment.cat-intro { background: rgba(30, 144, 255, 0.65); }
+.sb-segment.cat-outro { background: rgba(138, 43, 226, 0.65); }
+.sb-segment.cat-music_offtopic { background: rgba(0, 206, 209, 0.65); }
+
+/* Floating skip button */
+.sb-floating-skip {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 99999;
+}
+
+.sb-floating-skip button {
+  height: 32px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 16px;
+  background: rgba(0,0,0,0.75);
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.sb-floating-skip button:hover { background: rgba(0,0,0,0.9); }
+
+/* (Removed) legacy control-bar auto-skip pill styles: now managed in settings menu */
+/* Enlarge YouTube settings menu to reduce scrolling */
+.ytp-settings-menu {
+  max-height: 60vh !important;
+  width: 320px !important;
+}
+.ytp-settings-menu .ytp-panel,
+.ytp-settings-menu .ytp-panel-menu {
+  max-height: 60vh !important;
+}
+/* Ensure menu lists scroll smoothly if content exceeds bounds */
+.ytp-settings-menu .ytp-panel-menu {
+  overflow-y: auto !important;
+}
