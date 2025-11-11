@@ -20,15 +20,22 @@ Manifest V3, works on desktop YouTube and m.youtube.com loaded in desktop browse
 
 ```
 GonBMMI-web/
-├── manifest.json          # MV3 manifest, permissions, content scripts
+├── manifest.json          # MV3 manifest, permissions, content scripts + icons
 ├── shared.js              # Shared constants: categories, storage keys, labels, defaults
 ├── content.js             # Content script for fetching, rendering, and auto‑skip
 ├── content.css            # Timeline overlay, floating button, menu sizing tweaks
 ├── popup.html             # Popup UI (auto‑skip, category visibility, colors)
 ├── popup.css              # Popup styles
 ├── popup.js               # Popup logic, storage sync + messaging
+├── icons/                 # Toolbar/extension icons (PNG: 16/24/32/64/128)
 └── README.md              # This document
 ```
+
+## Icons
+
+Icons are included and referenced in `manifest.json` and the browser action. You can customize them:
+- Replace any of the PNGs in `icons/` with your own artwork (keep the same filenames or update the manifest `icons` and `action.default_icon` paths accordingly).
+- Sizes provided: 16, 24, 32, 64, 128 px.
 
 ## How it works
 
